@@ -1,0 +1,17 @@
+﻿<p>Hola soy @Name</p>
+<p>Esto viene desde otro componente: @Info</p>
+
+@code {
+    [Parameter] public string Name { get; set; } = string.Empty;
+    [Parameter] public string Info { get; set; } = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        Console.WriteLine($"El valor del parametro ahora es {Info}");
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Console.WriteLine($"El valor del parametro ahora es {Info}");
+    }
+}
