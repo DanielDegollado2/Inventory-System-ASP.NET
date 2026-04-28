@@ -19,11 +19,15 @@ namespace Aplication.UseCases.Users
             _repository = repository;
         }
 
-        public async Task<UserDto> Handle(int id)
+        /*
+        public Task<UserDto> Handle(int id)
         {
+            
             var user = await _repository.GetByIdAsync(id);
             if (user == null) throw new NullReferenceException("That user does not exist");
             return new UserDto(user.Id, user.Name, user.Email);
-        }
+            
+        }*/
+        
     }
 }

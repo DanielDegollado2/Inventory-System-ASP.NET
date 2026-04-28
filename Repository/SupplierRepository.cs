@@ -28,8 +28,8 @@ namespace Repository
 
         public async Task DeleteAsync(int id)
         {
-            _context.Remove(id);
-            await _context.SaveChangesAsync();
+            var rows = await _context.Suppliers.Where(s => s.Id == id).ExecuteDeleteAsync();
+            if (rows == 0) throw new KeyNotFoundException($"Supplier with id {id} was not found.");
         }
 
         public async Task<IEnumerable<SupplierEntity>> GetAllAsync()
@@ -41,7 +41,7 @@ namespace Repository
         public async Task<SupplierEntity> GetByIdAsync(int id)
         {
             var supplier = await _context.Suppliers.FirstOrDefaultAsync(p => p.Id == id);
-            if (supplier == null) { throw new KeyNotFoundException(); }
+            if (supplier == null) { throw new KeyNotFoundException($"Supplier with id {id} was not found."); }
 
             return MapToEntity(supplier);
         }
@@ -49,7 +49,7 @@ namespace Repository
         public async Task UpdateAsync(SupplierEntity entity)
         {
             var supplier = await _context.Suppliers.FindAsync(entity.Id);
-            if (supplier == null) throw new KeyNotFoundException("Product not found");
+            if (supplier == null) throw new KeyNotFoundException("Supplier not found");
             
             supplier.Name = entity.Name;
             supplier.PhoneNumber = entity.PhoneNumber;

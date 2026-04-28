@@ -17,6 +17,7 @@ namespace Domain
 
         public ProductEntity(int id, string name, string code, int stock, int minimumStock, int supplierId)
         {
+            code = code.Trim();
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Name cannot be empty", nameof(name));
             if (code.Length != 8 || !code.All(char.IsLetterOrDigit))

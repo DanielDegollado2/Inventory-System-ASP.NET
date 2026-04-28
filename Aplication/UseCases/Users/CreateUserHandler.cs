@@ -22,6 +22,7 @@ namespace Aplication.UseCases.Users
 
         public async Task Handle(UserEntity entity)
         {
+            /*
             var user = await _repository.GetByIdAsync(entity.Id);
             if (user != null) throw new InvalidOperationException("That user already exists");
 
@@ -31,6 +32,7 @@ namespace Aplication.UseCases.Users
             string hashedPassword = _passwordHasher.HashPassword(entity.Password);
             UserEntity newUser = new UserEntity(entity.Id, entity.Name, entity.Email, hashedPassword);
             await _repository.AddAsync(newUser);
+            */
         }
     }
 }

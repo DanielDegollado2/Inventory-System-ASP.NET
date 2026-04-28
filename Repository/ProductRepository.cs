@@ -28,8 +28,8 @@ namespace Repository
 
         public async Task DeleteAsync(int id)
         {
-            _context.Remove(id);
-            await _context.SaveChangesAsync();
+            var rows = await _context.Products.Where(s => s.Id == id).ExecuteDeleteAsync();
+            if (rows == 0) throw new KeyNotFoundException($"Product with id {id} was not found.");
         }
 
         public async Task<IEnumerable<ProductEntity>> GetAllAsync()
@@ -63,7 +63,7 @@ namespace Repository
         #region Mappers
         private ProductEntity MapToEntity(Product model)
         {
-            return new ProductEntity(model.Id, model.Name, model.Code, model.Stock , model.MinimumStock, model.SupplierId);
+            return new ProductEntity(model.Id, model.Name, model.Code.Trim(), model.Stock , model.MinimumStock, model.SupplierId);
         }
 
         private Product MapToModel(ProductEntity entity)
@@ -74,6 +74,7 @@ namespace Repository
                 Code = entity.Code,
                 Stock = entity.Stock,
                 MinimumStock = entity.MinimumStock,
+                SupplierId = entity.SupplierId
             };
         }
         #endregion

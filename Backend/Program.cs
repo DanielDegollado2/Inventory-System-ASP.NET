@@ -1,14 +1,18 @@
 using Aplication.UseCases.Movements;
 using Aplication.UseCases.Products;
+using Aplication.UseCases.Suppliers;
 using Application.Common;
 using Application.UseCases.Movements;
 using Application.UseCases.Products;
+using Application.UseCases.Suppliers;
 using Backend.DTOs;
 using Backend.DTOs.Movement;
+using Backend.DTOs.Supplier;
 using Data;
 using Domain;
 using Domain.Interfaces;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Repository;
 using System.Text.Json;
@@ -19,16 +23,16 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
-var connection = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<InventoryContext>(options =>
-{
-    options.UseSqlServer(connection);
-});
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddScoped<IUnitOfWork, EfUnitOfWork>();
 
 builder.Services.AddScoped<IRepository<ProductEntity>, ProductRepository>();
 builder.Services.AddScoped<IRepository<MovementEntity>, MovementRepository>();
 builder.Services.AddScoped<IRepository<SupplierEntity>, SupplierRepository>();
+
+builder.Services.AddAuthentication();
+builder.Services.AddAuthorization();
 
 // Product use cases registration
 builder.Services.AddScoped<GetAllProductsHandler>();
@@ -41,7 +45,15 @@ builder.Services.AddScoped<DeleteProductByIdHandler>();
 builder.Services.AddScoped<GetAllMovementsHandler>();
 builder.Services.AddScoped<GetMovementByIdHandler>();
 builder.Services.AddScoped<UpdateMovementHandler>();
+builder.Services.AddScoped<CreateMovementHandler>();
 builder.Services.AddScoped<DeleteMovementByIdHandler>();
+
+// Supplier use cases registration
+builder.Services.AddScoped<GetAllSuppliersHandler>();
+builder.Services.AddScoped<GetSupplierByIdHandler>();
+builder.Services.AddScoped<UpdateSupplierHandler>();
+builder.Services.AddScoped<CreateSupplierHandler>();
+builder.Services.AddScoped<DeleteSupplierByIdHandler>();
 
 // swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -77,33 +89,35 @@ app.UseExceptionHandler(errorApp =>
         else
         {
             context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-            await context.Response.WriteAsync("An unexpected error occurred.");
+            await context.Response.WriteAsync(exception?.InnerException?.Message ?? exception?.Message ?? "An unexpected error occurred.");
         }
     });
 });
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 
 #region Product endpoints
-app.MapGet("product", async (GetAllProductsHandler useCase) =>
+app.MapGet("product", async ([FromServices] GetAllProductsHandler useCase) =>
 {
     var products = await useCase.Handle();
     return Results.Ok(products);
 
 }).WithName("getallproducts");
 
-app.MapGet("product/{id}", async (int id, GetProductByIdHandler useCase) =>
+app.MapGet("product/{id}", async (int id, [FromServices] GetProductByIdHandler useCase) =>
 {
     var product = await useCase.Handle(id);
     return product is null ? Results.NotFound("Product not found") : Results.Ok(product);
 
 }).WithName("getproduct");
 
-app.MapPost("product", async (CreateProductDTO dto, CreateProductHandler useCase) =>
+app.MapPost("product", async (UpdateProductDTO dto, [FromServices] CreateProductHandler useCase) =>
 {
     ProductEntity product = new()
     {
+        Id = dto.Id,
         Name = dto.Name,
         Code = dto.Code,
         Stock = dto.Stock,
@@ -115,7 +129,7 @@ app.MapPost("product", async (CreateProductDTO dto, CreateProductHandler useCase
 
 }).WithName("createproduct");
 
-app.MapPut("product", async (UpdateProductDTO dto, UpdateProductHandler updateProductUseCase) =>
+app.MapPut("product", async (UpdateProductDTO dto, [FromServices] UpdateProductHandler updateProductUseCase) =>
 {
     ProductEntity product = new()
     {
@@ -131,7 +145,7 @@ app.MapPut("product", async (UpdateProductDTO dto, UpdateProductHandler updatePr
 
 }).WithName("editproduct");
 
-app.MapDelete("product/{id}", async (int id, DeleteProductByIdHandler useCase) =>
+app.MapDelete("product/{id}", async (int id, [FromServices] DeleteProductByIdHandler useCase) =>
 {
     await useCase.Handle(id);
     return Results.Ok();
@@ -140,21 +154,21 @@ app.MapDelete("product/{id}", async (int id, DeleteProductByIdHandler useCase) =
 #endregion
 
 #region Movement endpoints
-app.MapGet("movement", async (GetAllMovementsHandler useCase) =>
+app.MapGet("movement", async ([FromServices] GetAllMovementsHandler useCase) =>
 {
     var movements = await useCase.Handle();
     return Results.Ok(movements);
 
 }).WithName("getallmovements");
 
-app.MapGet("movement/{id}", async (int id, GetMovementByIdHandler useCase) =>
+app.MapGet("movement/{id}", async (int id, [FromServices] GetMovementByIdHandler useCase) =>
 {
     var movement = await useCase.Handle(id);
     return Results.Ok(movement);
 
 }).WithName("getmovement");
 
-app.MapPost("movement", async (CreateMovementDTO dto, CreateMovementHandler useCase) =>
+app.MapPost("movement", async (CreateMovementDTO dto, [FromServices] CreateMovementHandler useCase) =>
 {
     MovementEntity movement = new()
     {
@@ -169,7 +183,7 @@ app.MapPost("movement", async (CreateMovementDTO dto, CreateMovementHandler useC
 
 }).WithName("createmovement");
 
-app.MapPut("movement", async (UpdateMovementDTO dto, UpdateMovementHandler useCase) =>
+app.MapPut("movement", async (UpdateMovementDTO dto, [FromServices] UpdateMovementHandler useCase) =>
 {
     MovementEntity movement = new()
     {
@@ -180,14 +194,68 @@ app.MapPut("movement", async (UpdateMovementDTO dto, UpdateMovementHandler useCa
         ProductId = dto.ProductId,
     };
     await useCase.Handle(movement);
+
+    return Results.Ok("Movement created");
+
 }).WithName("editmovement");
 
-app.MapDelete("movement/{id}", async (int id, DeleteMovementByIdHandler useCase) =>
+app.MapDelete("movement/{id}", async (int id, [FromServices] DeleteMovementByIdHandler useCase) =>
 {
     await useCase.Handle(id);
     return Results.Ok();
 
 }).WithName("deletemovement");
+#endregion
+
+#region Supplier endpoints
+app.MapGet("supplier", async ([FromServices] GetAllSuppliersHandler useCase) =>
+{
+    var suppliers = await useCase.Handle();
+    return Results.Ok(suppliers);
+
+}).WithName("getallsuppliers");
+
+app.MapGet("supplier/{id}", async (int id, [FromServices] GetSupplierByIdHandler useCase) =>
+{
+    var supplier = await useCase.Handle(id);
+    return Results.Ok(supplier);
+
+}).WithName("getsupplier");
+
+app.MapPost("supplier", async (CreateSupplierDTO dto, [FromServices] CreateSupplierHandler useCase) =>
+{
+    SupplierEntity supplier = new()
+    {
+        Name = dto.Name,
+        PhoneNumber = dto.PhoneNumber,
+        Email = dto.Email
+    };
+    await useCase.Handle(supplier);
+
+    return Results.Created();
+
+}).WithName("createsupplier");
+
+app.MapPut("supplier", async (UpdateSupplierDTO dto, [FromServices] UpdateSupplierHandler useCase) =>
+{
+    SupplierEntity supplier = new()
+    {
+        Id = dto.Id,
+        Name = dto.Name,
+        PhoneNumber = dto.PhoneNumber,
+        Email = dto.Email
+    };
+    await useCase.Handle(supplier);
+
+    return Results.Ok("Updated supplier");
+}).WithName("editsupplier");
+
+app.MapDelete("supplier/{id}", async (int id, [FromServices] DeleteSupplierByIdHandler useCase) =>
+{
+    await useCase.Handle(id);
+    return Results.Ok();
+
+}).WithName("deletesupplier");
 #endregion
 
 app.Run();

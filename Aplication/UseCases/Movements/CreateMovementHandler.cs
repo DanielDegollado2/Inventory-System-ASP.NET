@@ -19,8 +19,6 @@ namespace Aplication.UseCases.Movements
 
         public async Task Handle(MovementEntity entity)
         {
-            var movement = await _repository.GetByIdAsync(entity.Id);
-            if (movement != null) throw new InvalidOperationException("That movement already exists");
             await _repository.AddAsync(entity);
         }
     }

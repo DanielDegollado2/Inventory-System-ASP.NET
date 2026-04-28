@@ -19,8 +19,6 @@ namespace Aplication.UseCases.Products
 
         public async Task Handle(ProductEntity entity)
         {
-            var product = await _repository.GetByIdAsync(entity.Id);
-            if (product != null) throw new InvalidOperationException("That product already exists");
             await _repository.AddAsync(entity);
         }
     }

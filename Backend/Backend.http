@@ -4,23 +4,61 @@ GET {{Backend_HostAddress}}/test/
 Accept: application/json
 
 ###
-GET {{Backend_HostAddress}}/brand/
+GET {{Backend_HostAddress}}/supplier/
+###
+GET {{Backend_HostAddress}}/supplier/2
 
 ###
-POST {{Backend_HostAddress}}/brand/
+POST {{Backend_HostAddress}}/supplier/
 Content-Type: application/json
 
 {
-  "name" : "Una marca nueva"
+  "name" : "Sherwin-Williams México",
+  "email" : "info@sherwin.com.mx",
+  "phonenumber" : "800-714-6679"
 }
 
 ###
-PUT {{Backend_HostAddress}}/brand/7
+PUT {{Backend_HostAddress}}/supplier/
 Content-Type: application/json
 
 {
-  "name" : "marca editada"
+  "id" : 2,
+  "name" : "Sherwin-Williams México, Nuevo León",
+  "email" : "info@sherwin.com.mx",
+  "phonenumber" : "800-714-6679"
 }
 
 ###
-DELETE {{Backend_HostAddress}}/brand/7
+DELETE {{Backend_HostAddress}}/supplier/3
+
+###
+GET {{Backend_HostAddress}}/product
+###
+GET {{Backend_HostAddress}}/product/12
+###
+POST {{Backend_HostAddress}}/product/
+Content-Type: application/json
+
+{
+  "name" : "Black",
+  "code" : "EPG00007",
+  "stock" : 10,
+  "minimumstock" : 5,
+  "supplierid" : 2
+}
+###
+PUT {{Backend_HostAddress}}/product/
+Content-Type: application/json
+
+{
+  "id" : 14,
+  "name" : "Black",
+  "code" : "EPG00007",
+  "stock" : 8,
+  "minimumstock" : 5,
+  "supplierid" : 2
+}
+
+###
+DELETE {{Backend_HostAddress}}/product/10

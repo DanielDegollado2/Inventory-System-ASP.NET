@@ -27,8 +27,8 @@ namespace Repository
 
         public async Task DeleteAsync(int id)
         {
-            _context.Remove(id);
-            await _context.SaveChangesAsync();
+            var rows = await _context.Movements.Where(s => s.Id == id).ExecuteDeleteAsync();
+            if (rows == 0) throw new KeyNotFoundException($"Movement with id {id} was not found.");
         }
 
         public async Task<IEnumerable<MovementEntity>> GetAllAsync()

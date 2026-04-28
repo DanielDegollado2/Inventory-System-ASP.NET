@@ -11,10 +11,10 @@ namespace Data
 {
     public class EfUnitOfWork : IUnitOfWork
     {
-        private readonly DbContext _context;
+        private readonly InventoryContext _context;
         private IDbContextTransaction? _transaction;
 
-        public EfUnitOfWork(DbContext context) 
+        public EfUnitOfWork(InventoryContext context) 
         {
             _context = context;
         }

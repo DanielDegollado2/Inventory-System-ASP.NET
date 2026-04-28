@@ -19,8 +19,6 @@ namespace Aplication.UseCases.Suppliers
 
         public async Task Handle(SupplierEntity entity)
         {
-            var supplier = await _repository.GetByIdAsync(entity.Id);
-            if (supplier != null) throw new InvalidOperationException("That supplier already exists");
             await _repository.AddAsync(entity);
         }
     }
