@@ -11,10 +11,10 @@ namespace Aplication.UseCases.Users
 {
     public class CreateUserHandler
     {
-        private readonly IRepository<UserEntity> _repository;
+        private readonly IUserRepository _repository;
         private readonly IPasswordHasher _passwordHasher;
 
-        public CreateUserHandler(IRepository<UserEntity> repository, IPasswordHasher passwordHasher)
+        public CreateUserHandler(IUserRepository repository, IPasswordHasher passwordHasher)
         {
             _repository = repository;
             _passwordHasher = passwordHasher;
@@ -22,17 +22,14 @@ namespace Aplication.UseCases.Users
 
         public async Task Handle(UserEntity entity)
         {
-            /*
-            var user = await _repository.GetByIdAsync(entity.Id);
-            if (user != null) throw new InvalidOperationException("That user already exists");
-
             if (string.IsNullOrWhiteSpace(entity.Password)) throw new ArgumentException("Password must not be null or blank", nameof(entity.Password));
             if (entity.Password.Length < 8 || entity.Password.Length > 15) throw new ArgumentException("Password must be between 8 and 15 characters long", nameof(entity.Password));
+            
+            var user = await _repository.GetUserByUsername(entity.Username);
+            if (user != null) throw new InvalidOperationException("That user already exists");
 
-            string hashedPassword = _passwordHasher.HashPassword(entity.Password);
-            UserEntity newUser = new UserEntity(entity.Id, entity.Name, entity.Email, hashedPassword);
-            await _repository.AddAsync(newUser);
-            */
+            entity.Password = _passwordHasher.HashPassword(entity.Password);
+            await _repository.AddAsync(entity);
         }
     }
 }

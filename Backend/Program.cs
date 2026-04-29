@@ -30,6 +30,7 @@ builder.Services.AddScoped<IUnitOfWork, EfUnitOfWork>();
 builder.Services.AddScoped<IRepository<ProductEntity>, ProductRepository>();
 builder.Services.AddScoped<IRepository<MovementEntity>, MovementRepository>();
 builder.Services.AddScoped<IRepository<SupplierEntity>, SupplierRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
