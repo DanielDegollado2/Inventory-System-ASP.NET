@@ -1,6 +1,8 @@
 using Aplication.UseCases.Movements;
 using Aplication.UseCases.Products;
 using Aplication.UseCases.Suppliers;
+using Aplication.UseCases.Users;
+using Application.Abstractions;
 using Application.Common;
 using Application.UseCases.Movements;
 using Application.UseCases.Products;
@@ -8,13 +10,17 @@ using Application.UseCases.Suppliers;
 using Backend.DTOs;
 using Backend.DTOs.Movement;
 using Backend.DTOs.Supplier;
+using Backend.DTOs.User;
+using Backend.WebSockets;
 using Data;
 using Domain;
 using Domain.Interfaces;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Repository;
+using System.Net.WebSockets;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -34,6 +40,11 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
+
+builder.Services.AddScoped<IPasswordHasher<UserEntity>, PasswordHasher<UserEntity>>();
+
+builder.Services.AddSingleton<WebSocketConnectionManager>();
+builder.Services.AddSingleton<IStockNotifier, WebSocketStockNotifier>();
 
 // Product use cases registration
 builder.Services.AddScoped<GetAllProductsHandler>();
@@ -55,6 +66,9 @@ builder.Services.AddScoped<GetSupplierByIdHandler>();
 builder.Services.AddScoped<UpdateSupplierHandler>();
 builder.Services.AddScoped<CreateSupplierHandler>();
 builder.Services.AddScoped<DeleteSupplierByIdHandler>();
+
+// User use cases registration
+builder.Services.AddScoped<CreateUserHandler>();
 
 // swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -94,6 +108,7 @@ app.UseExceptionHandler(errorApp =>
         }
     });
 });
+app.UseWebSockets();
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
@@ -257,6 +272,59 @@ app.MapDelete("supplier/{id}", async (int id, [FromServices] DeleteSupplierByIdH
     return Results.Ok();
 
 }).WithName("deletesupplier");
+#endregion
+
+#region User endpoint
+app.MapGet("user", async ([FromServices] GetAllSuppliersHandler useCase) =>
+{
+    var suppliers = await useCase.Handle();
+    return Results.Ok(suppliers);
+
+}).WithName("getallusers");
+
+app.MapGet("user/{id}", async (int id, [FromServices] GetSupplierByIdHandler useCase) =>
+{
+    var supplier = await useCase.Handle(id);
+    return Results.Ok(supplier);
+
+}).WithName("getuser");
+
+app.MapPost("user", async (CreateUserDTO dto, [FromServices] CreateUserHandler useCase) =>
+{
+    UserEntity user = new()
+    {
+        Username = dto.UserName,
+        Password = dto.Password,
+        Role = dto.Role,
+    };
+    await useCase.Handle(user);
+
+    return Results.Created();
+
+}).WithName("createuser");
+#endregion
+
+#region WebSocket endpoint
+app.Map("ws", async (HttpContext context, WebSocketConnectionManager manager) =>
+{
+    var socket = await context.WebSockets.AcceptWebSocketAsync();
+    var id = Guid.NewGuid().ToString();
+    manager.CreateConnection(id, socket);
+    var buffer = new byte[1024];
+
+    while (socket.State == WebSocketState.Open)
+    {
+        var result = await socket.ReceiveAsync(buffer, CancellationToken.None);
+
+        if (result.MessageType == WebSocketMessageType.Close)
+        {
+            break;
+        }
+    }
+
+    manager.RemoveConnection(id);
+
+});
 #endregion
 
 app.Run();

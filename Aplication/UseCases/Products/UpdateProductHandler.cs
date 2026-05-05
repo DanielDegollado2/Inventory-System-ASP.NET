@@ -1,4 +1,5 @@
-﻿using Application.Common;
+﻿using Application.Abstractions;
+using Application.Common;
 using Domain;
 using Domain.Interfaces;
 using System;
@@ -14,12 +15,14 @@ namespace Application.UseCases.Products
         private readonly IRepository<ProductEntity> _productRepository;
         private readonly IRepository<MovementEntity> _movementRepository;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IStockNotifier _stockNotifier;
 
-        public UpdateProductHandler(IRepository<ProductEntity> productRepository, IRepository<MovementEntity> movementRepository, IUnitOfWork unitOfWork)
+        public UpdateProductHandler(IRepository<ProductEntity> productRepository, IRepository<MovementEntity> movementRepository, IUnitOfWork unitOfWork, IStockNotifier stockNotifier)
         {
             _productRepository = productRepository;
             _movementRepository = movementRepository;
             _unitOfWork = unitOfWork;
+            _stockNotifier = stockNotifier;
         }
 
         public async Task Handle(ProductEntity entity)
@@ -62,6 +65,11 @@ namespace Application.UseCases.Products
 
                 await _productRepository.UpdateAsync(entity);
                 await _unitOfWork.CommitAsync();
+
+                if (entity.Stock < entity.MinimumStock)
+                {
+                    await _stockNotifier.NotifyLowStock(entity);
+                }
             }
             catch
             {

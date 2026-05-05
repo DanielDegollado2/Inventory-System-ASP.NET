@@ -1,6 +1,6 @@
 ﻿using Domain;
 using Domain.Interfaces;
-using Microsoft.AspNet.Identity;
+using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,9 +12,9 @@ namespace Aplication.UseCases.Users
     public class CreateUserHandler
     {
         private readonly IUserRepository _repository;
-        private readonly IPasswordHasher _passwordHasher;
+        private readonly IPasswordHasher<UserEntity> _passwordHasher;
 
-        public CreateUserHandler(IUserRepository repository, IPasswordHasher passwordHasher)
+        public CreateUserHandler(IUserRepository repository, IPasswordHasher<UserEntity> passwordHasher)
         {
             _repository = repository;
             _passwordHasher = passwordHasher;
@@ -28,7 +28,7 @@ namespace Aplication.UseCases.Users
             var user = await _repository.GetUserByUsername(entity.Username);
             if (user != null) throw new InvalidOperationException("That user already exists");
 
-            entity.Password = _passwordHasher.HashPassword(entity.Password);
+            entity.Password = _passwordHasher.HashPassword(entity, entity.Password);
             await _repository.AddAsync(entity);
         }
     }

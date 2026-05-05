@@ -19,9 +19,11 @@ namespace Repository
             _context = context;
         }
 
-        public Task AddAsync(UserEntity entity)
+        public async Task AddAsync(UserEntity entity)
         {
-            throw new NotImplementedException();
+            User user = MapToModel(entity);
+            await _context.Users.AddAsync(user);
+            await _context.SaveChangesAsync();
         }
 
         public Task DeleteAsync(int id)
@@ -61,9 +63,9 @@ namespace Repository
         {
             return new User
             {
-                Id = entity.Id,
                 Username = entity.Username,
-                Password = entity.Password
+                Password = entity.Password,
+                Role = entity.Role
             };
         }
 

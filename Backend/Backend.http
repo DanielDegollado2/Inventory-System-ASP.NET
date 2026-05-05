@@ -62,3 +62,12 @@ Content-Type: application/json
 
 ###
 DELETE {{Backend_HostAddress}}/product/10
+###
+POST {{Backend_HostAddress}}/user/
+Content-Type: application/json
+
+{
+  "username" : "Black",
+  "password" : "1234ert54",
+  "role" : "User"
+}
