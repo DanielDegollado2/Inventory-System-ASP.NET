@@ -52,10 +52,10 @@ PUT {{Backend_HostAddress}}/product/
 Content-Type: application/json
 
 {
-  "id" : 14,
+  "id" : 12,
   "name" : "Black",
   "code" : "EPG00007",
-  "stock" : 8,
+  "stock" : 4,
   "minimumstock" : 5,
   "supplierid" : 2
 }

@@ -22,6 +22,7 @@ public partial class InventoryContext : DbContext
     public virtual DbSet<Supplier> Suppliers { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
+    public virtual DbSet<Webhook> Webhooks { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -67,6 +68,18 @@ public partial class InventoryContext : DbContext
                 .HasMaxLength(15)
                 .IsUnicode(false);
             entity.Property(e => e.Username).HasMaxLength(50);
+        });
+
+        modelBuilder.Entity<Webhook>(entity =>
+        {
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Url).HasMaxLength(500);
+            entity.Property(e => e.Event).HasMaxLength(50);
+            entity.HasOne(d => d.Supplier)
+                .WithMany(p => p.Webhooks)
+                .HasForeignKey(d => d.SupplierId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Webhooks_Suppliers");
         });
 
         OnModelCreatingPartial(modelBuilder);

@@ -7,10 +7,12 @@ using Application.Common;
 using Application.UseCases.Movements;
 using Application.UseCases.Products;
 using Application.UseCases.Suppliers;
+using Application.UseCases.Webhooks;
 using Backend.DTOs;
 using Backend.DTOs.Movement;
 using Backend.DTOs.Supplier;
 using Backend.DTOs.User;
+using Backend.DTOs.WebHook;
 using Backend.WebSockets;
 using Data;
 using Domain;
@@ -312,18 +314,31 @@ app.Map("ws", async (HttpContext context, WebSocketConnectionManager manager) =>
     manager.CreateConnection(id, socket);
     var buffer = new byte[1024];
 
-    while (socket.State == WebSocketState.Open)
+    if (context.WebSockets.IsWebSocketRequest)
     {
-        var result = await socket.ReceiveAsync(buffer, CancellationToken.None);
-
-        if (result.MessageType == WebSocketMessageType.Close)
+        while (socket.State == WebSocketState.Open)
         {
-            break;
+            var result = await socket.ReceiveAsync(buffer, CancellationToken.None);
+
+            if (result.MessageType == WebSocketMessageType.Close)
+            {
+                break;
+            }
         }
+
+        manager.RemoveConnection(id);
     }
+    else
+    {
+        context.Response.StatusCode = 400;
+    }
+});
+#endregion
 
-    manager.RemoveConnection(id);
-
+#region WebHook endpoint
+app.MapPost("wh", async (WebHookDTO dto, [FromServices] RegisterWebhookHandler useCase) =>
+{
+   
 });
 #endregion
 

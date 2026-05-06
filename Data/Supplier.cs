@@ -14,4 +14,5 @@ public partial class Supplier
     public string? Email { get; set; }
 
     public virtual ICollection<Product> Products { get; set; } = new List<Product>();
+    public virtual ICollection<Webhook> Webhooks { get; set; } = new List<Webhook>();
 }
