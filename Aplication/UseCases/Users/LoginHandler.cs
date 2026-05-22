@@ -8,6 +8,9 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using System.IdentityModel.Tokens.Jwt;
+using Application.Abstractions;
+
 
 namespace Application.UseCases.Users
 {
@@ -15,52 +18,29 @@ namespace Application.UseCases.Users
     {
         private readonly IUserRepository _repository;
         private readonly IPasswordHasher _passwordHasher;
+        private readonly ITokenGenerator _tokenGenerator;
 
-        public LoginHandler(IUserRepository repository, IPasswordHasher passwordHasher)
+        public LoginHandler(IUserRepository repository, IPasswordHasher passwordHasher, ITokenGenerator tokenGenerator)
         {
             _repository = repository;
             _passwordHasher = passwordHasher;
+            _tokenGenerator = tokenGenerator;
         }
 
-        public async Task Handle(string userName, string password)
+        public async Task<string> Handle(string userName, string password)
         {
             var user = await _repository.GetUserByUsername(userName);
             if (user == null) throw new InvalidOperationException("That user does not exists");
 
             if(_passwordHasher.VerifyHashedPassword(user.Password, password) == PasswordVerificationResult.Success)
             {
-
+                var token = _tokenGenerator.GenerateToken(user);
+                return token;
             }
-            else if(_passwordHasher.VerifyHashedPassword(user.Password, password) == PasswordVerificationResult.Failed)
+            else(_passwordHasher.VerifyHashedPassword(user.Password, password) == PasswordVerificationResult.Failed)
             {
-
+                throw new InvalidOperationException("Invalid password");
             }
         }
-
-        /*
-        private string GenerateJwtToken(UserEntity user)
-        {
-
-            var claims = new[]
-            {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-                new Claim(JwtRegisteredClaimNames.UniqueName, user.Email),
-                new Claim("name", user.Name)
-            };
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("YourSuperSecretKeyHere"));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var token = new JwtSecurityToken(
-                issuer: "yourapp",
-                audience: "yourapp",
-                claims: claims,
-                expires: DateTime.UtcNow.AddHours(1),
-                signingCredentials: creds);
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
-        */
-
     }
 }

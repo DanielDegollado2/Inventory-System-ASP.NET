@@ -13,16 +13,20 @@ using Backend.DTOs.Movement;
 using Backend.DTOs.Supplier;
 using Backend.DTOs.User;
 using Backend.DTOs.WebHook;
+using Backend.TokenGenerator;
 using Backend.WebSockets;
 using Data;
 using Domain;
 using Domain.Interfaces;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Repository;
 using System.Net.WebSockets;
+using System.Text;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -40,13 +44,38 @@ builder.Services.AddScoped<IRepository<MovementEntity>, MovementRepository>();
 builder.Services.AddScoped<IRepository<SupplierEntity>, SupplierRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
-builder.Services.AddAuthentication();
-builder.Services.AddAuthorization();
+// jwt authentication configuration
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+    };
+});
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminPolicy", policy =>
+        policy.RequireRole("Admin"));
+});
 
 builder.Services.AddScoped<IPasswordHasher<UserEntity>, PasswordHasher<UserEntity>>();
 
 builder.Services.AddSingleton<WebSocketConnectionManager>();
 builder.Services.AddSingleton<IStockNotifier, WebSocketStockNotifier>();
+builder.Services.AddSingleton<ITokenGenerator, TokenGenerator>();
 
 // Product use cases registration
 builder.Services.AddScoped<GetAllProductsHandler>();
@@ -145,7 +174,7 @@ app.MapPost("product", async (UpdateProductDTO dto, [FromServices] CreateProduct
     await useCase.Handle(product);
     return Results.Created();
 
-}).WithName("createproduct");
+}).WithName("createproduct").RequireAuthorization("AdminPolicy"); ;
 
 app.MapPut("product", async (UpdateProductDTO dto, [FromServices] UpdateProductHandler updateProductUseCase) =>
 {
@@ -161,14 +190,14 @@ app.MapPut("product", async (UpdateProductDTO dto, [FromServices] UpdateProductH
     await updateProductUseCase.Handle(product);
     return Results.Ok("Updated product");
 
-}).WithName("editproduct");
+}).WithName("editproduct").RequireAuthorization("AdminPolicy"); ;
 
 app.MapDelete("product/{id}", async (int id, [FromServices] DeleteProductByIdHandler useCase) =>
 {
     await useCase.Handle(id);
     return Results.Ok();
 
-}).WithName("deleteproduct");
+}).WithName("deleteproduct").RequireAuthorization("AdminPolicy"); ;
 #endregion
 
 #region Movement endpoints
@@ -252,7 +281,7 @@ app.MapPost("supplier", async (CreateSupplierDTO dto, [FromServices] CreateSuppl
 
     return Results.Created();
 
-}).WithName("createsupplier");
+}).WithName("createsupplier").RequireAuthorization("AdminPolicy"); ;
 
 app.MapPut("supplier", async (UpdateSupplierDTO dto, [FromServices] UpdateSupplierHandler useCase) =>
 {
@@ -266,14 +295,14 @@ app.MapPut("supplier", async (UpdateSupplierDTO dto, [FromServices] UpdateSuppli
     await useCase.Handle(supplier);
 
     return Results.Ok("Updated supplier");
-}).WithName("editsupplier");
+}).WithName("editsupplier").RequireAuthorization("AdminPolicy"); ;
 
 app.MapDelete("supplier/{id}", async (int id, [FromServices] DeleteSupplierByIdHandler useCase) =>
 {
     await useCase.Handle(id);
     return Results.Ok();
 
-}).WithName("deletesupplier");
+}).WithName("deletesupplier").RequireAuthorization("AdminPolicy"); ;
 #endregion
 
 #region User endpoint
@@ -303,7 +332,7 @@ app.MapPost("user", async (CreateUserDTO dto, [FromServices] CreateUserHandler u
 
     return Results.Created();
 
-}).WithName("createuser");
+}).WithName("createuser").RequireAuthorization("AdminPolicy");
 #endregion
 
 #region WebSocket endpoint
